@@ -1,7 +1,18 @@
+# main.py
 import dash
 from dash import dcc, html, Input, Output
 from dash.dash_table import DataTable
 import plotly.express as px
+from styling import (
+    TableContainerStyle,
+    TableCellStyle,
+    TableHeaderStyle,
+    DropDownContainerStyle,
+    ResetButtonStyle,
+    FlexRowStyle,
+    PieChartContainerStyle,
+    TableWrapperStyle,
+)
 
 # Centralized data
 TABLE_DATA = [
@@ -19,158 +30,90 @@ PIE_DATA = {
 # Available columns
 ALL_COLUMNS = ["Name", "Age", "City", "Occupation", "Salary"]
 
-# Styling for the table
-TABLE_STYLES = {
-    "table_container": {
-        "overflowX": "auto",
-        "border": "1px solid #e7e7e7",
-        "borderRadius": "8px",
-        "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.1)",
-    },
-    "cell": {
-        "textAlign": "left",
-        "padding": "12px",
-        "fontSize": "14px",
-        "fontFamily": "Arial, sans-serif",
-        "borderBottom": "1px solid #e7e7e7",
-    },
-    "header": {
-        "backgroundColor": "#f4f4f4",
-        "color": "#212529",
-        "fontWeight": "600",
-        "textAlign": "left",
-        "borderBottom": "2px solid #007bff",
-    },
-}
+# Use the style classes
+table_container_style = TableContainerStyle().generate()
+cell_style = TableCellStyle().generate()
+header_style = TableHeaderStyle().generate()
+dropdown_container_style = DropDownContainerStyle().generate()
+reset_button_style = ResetButtonStyle().generate()
+flex_row_style = FlexRowStyle().generate()
+pie_chart_style = PieChartContainerStyle().generate()
+table_wrapper_style = TableWrapperStyle().generate()
 
 PIE_CHART = px.pie(PIE_DATA, values="Count", names="City", title="City Distribution")
 
 # Dash app initialization
 app = dash.Dash(__name__)
 
-# App layout
+# Layout
 app.layout = html.Div(
     [
         html.H1("Dashboard with Resettable Columns", style={"textAlign": "center"}),
 
-        # Main layout: Pie chart and table
         html.Div(
             [
-                # Pie chart (30%)
-                html.Div(
-                    dcc.Graph(id="pie-chart", figure=PIE_CHART),
-                    style={"flex": "0.3", "marginRight": "20px"},
-                ),
+                # Pie chart section
+                html.Div(dcc.Graph(id="pie-chart", figure=PIE_CHART), style=pie_chart_style),
 
-                # Data table with column control
+                # Table and dropdown section
                 html.Div(
                     [
-                        # Dropdown for column selection
                         html.Div(
                             [
-                                html.Label(
-                                    "Select Columns:",
-                                    style={
-                                        "fontWeight": "bold",
-                                        "marginBottom": "10px",
-                                    },
-                                ),
+                                html.Label("Select Columns:", style={"fontWeight": "bold", "marginBottom": "10px"}),
                                 dcc.Dropdown(
                                     id="column-selector",
-                                    options=[
-                                        {"label": col, "value": col}
-                                        for col in ALL_COLUMNS
-                                    ],
-                                    value=ALL_COLUMNS,  # Default: all columns selected
+                                    options=[{"label": col, "value": col} for col in ALL_COLUMNS],
+                                    value=ALL_COLUMNS,
                                     multi=True,
                                     placeholder="Select columns to display",
                                     style={"width": "100%"},
                                 ),
                             ],
-                            style={
-                                "marginBottom": "10px",
-                                "padding": "10px",
-                                "border": "1px solid #e7e7e7",
-                                "borderRadius": "8px",
-                                "backgroundColor": "#f9f9f9",
-                                "boxShadow": "0 4px 8px rgba(0, 0, 0, 0.1)",
-                            },
+                            style=dropdown_container_style,
                         ),
-
-                        # Reset Columns Button
                         html.Div(
                             [
-                                html.Button(
-                                    "Reset Columns",
-                                    id="reset-button",
-                                    n_clicks=0,
-                                    style={
-                                        "padding": "10px 20px",
-                                        "backgroundColor": "#007bff",
-                                        "border": "none",
-                                        "color": "white",
-                                        "fontWeight": "bold",
-                                        "borderRadius": "5px",
-                                        "cursor": "pointer",
-                                        "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.2)",
-                                    },
-                                )
+                                html.Button("Reset Columns", id="reset-button", n_clicks=0, style=reset_button_style),
                             ],
                             style={"marginBottom": "20px"},
                         ),
-
-                        # DataTable
                         DataTable(
                             id="table",
-                            columns=[
-                                {"name": col, "id": col}
-                                for col in ALL_COLUMNS
-                            ],
+                            columns=[{"name": col, "id": col} for col in ALL_COLUMNS],
                             data=TABLE_DATA,
-                            style_table=TABLE_STYLES["table_container"],
-                            style_as_list_view=True,  # Clean layout
-                            style_cell=TABLE_STYLES["cell"],
-                            style_header=TABLE_STYLES["header"],
-                            hidden_columns=[],  # Dynamically updated
+                            style_table=table_container_style,
+                            style_as_list_view=True,
+                            style_cell=cell_style,
+                            style_header=header_style,
+                            hidden_columns=[],
                             filter_action="native",
                             page_size=10,
-                            # Disable any user interaction in the table
-                            editable=False,  # Turn off table editing
-                            row_deletable=False,  # Disable row deletion
+                            editable=False,
+                            row_deletable=False,
                             css=[{"selector": ".dash-spreadsheet-menu", "rule": "display: none;"}],
-                            # Remove default menu
                         ),
                     ],
-                    style={"flex": "0.7"},
+                    style=table_wrapper_style,
                 ),
             ],
-            style={
-                "display": "flex",
-                "flexDirection": "row",
-                "alignItems": "flex-start",
-                "gap": "20px",
-            },
+            style=flex_row_style,
         ),
     ]
 )
 
 
-# Callback to update visible columns based on dropdown or reset button
+# Callback
 @app.callback(
-    Output("table", "hidden_columns"),
-    Output("column-selector", "value"),
-    Input("column-selector", "value"),
-    Input("reset-button", "n_clicks"),
+    [Output("table", "hidden_columns"), Output("column-selector", "value")],
+    [Input("column-selector", "value"), Input("reset-button", "n_clicks")],
 )
 def update_hidden_columns(selected_columns, reset_clicks):
-    """Hides columns in the table based on dropdown selection."""
     ctx = dash.callback_context
 
-    # If Reset Columns button is clicked
     if ctx.triggered and ctx.triggered[0]["prop_id"] == "reset-button.n_clicks":
         return [], ALL_COLUMNS
 
-    # Calculate hidden columns (columns not selected)
     hidden_columns = [col for col in ALL_COLUMNS if col not in selected_columns]
     return hidden_columns, selected_columns
 
